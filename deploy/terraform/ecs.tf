@@ -1,3 +1,5 @@
+# Use the template_file data source to allow values in our task definition template to be replaced
+# with values from variables on apply
 data "template_file" "container-definition" {
   template = file("${path.module}/container_definitions.json.tpl")
   vars = {
@@ -10,10 +12,12 @@ data "template_file" "container-definition" {
   }
 }
 
+# Create a cloudwatch log group for the task
 resource "aws_cloudwatch_log_group" "spitlog" {
   name = "spitlog"
 }
 
+# Create the ECS cluster and enable container insights
 resource "aws_ecs_cluster" "spitlog" {
   name = "spitlog"
 
@@ -27,6 +31,7 @@ resource "aws_ecs_cluster" "spitlog" {
   }
 }
 
+# Define the capacity provider for the cluster as ECS Fargate
 resource "aws_ecs_cluster_capacity_providers" "spitlog" {
   cluster_name = aws_ecs_cluster.spitlog.name
 
@@ -39,6 +44,7 @@ resource "aws_ecs_cluster_capacity_providers" "spitlog" {
   }
 }
 
+# Create the task definition using our templated task definition file
 resource "aws_ecs_task_definition" "spitlog" {
   family                   = "spitlog"
   network_mode             = "awsvpc"
@@ -49,6 +55,7 @@ resource "aws_ecs_task_definition" "spitlog" {
   container_definitions    = data.template_file.container-definition.rendered
 }
 
+# Create the ECS service
 resource "aws_ecs_service" "spitlog" {
   name            = "splitlog"
   cluster         = aws_ecs_cluster.spitlog.id
